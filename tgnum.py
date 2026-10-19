@@ -74,6 +74,9 @@ def _new_conn() -> duckdb.DuckDBPyConnection:
     con.execute("SET http_timeout=300000")
     con.execute(f"SET threads={THREADS_PER_CONN}")
     con.execute("SET memory_limit='6GB'")
+    
+    # ✅ FIX: Allow wildcards (*) in HTTP paths
+    con.execute("SET allow_asterisks_in_http_paths=true")
 
     if HF_TOKEN:
         try: con.execute(f"CREATE OR REPLACE SECRET hf_secret (TYPE huggingface, PROVIDER config, TOKEN '{HF_TOKEN}')")
