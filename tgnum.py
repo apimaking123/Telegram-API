@@ -1,5 +1,5 @@
 """
-Telegram Data Search API (Full Dataset + Master DB + Gradio)
+Telegram Data Search API (Fixed HF Path)
 Author : @Cosmos_ownerr | Channel: @cosmosxinfo
 """
 
@@ -25,9 +25,6 @@ RATE_LIMIT_PER_MIN = int(os.environ.get("TG_RATE_LIMIT", "500"))
 
 DEVELOPER = "@Cosmos_ownerr"
 CHANNEL = "@cosmosxinfo"
-
-# Base URL of the dataset
-BASE_URL = "https://huggingface.co/datasets/Saksham4540/Telegram-DB/resolve/main"
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  CACHE & RATE LIMIT
@@ -74,17 +71,16 @@ def _new_conn() -> duckdb.DuckDBPyConnection:
     con.execute("SET http_timeout=300000")
     con.execute(f"SET threads={THREADS_PER_CONN}")
     con.execute("SET memory_limit='6GB'")
-    
-    # ✅ FIX: Allow wildcards (*) in HTTP paths
-    con.execute("SET allow_asterisks_in_http_paths=true")
 
     if HF_TOKEN:
         try: con.execute(f"CREATE OR REPLACE SECRET hf_secret (TYPE huggingface, PROVIDER config, TOKEN '{HF_TOKEN}')")
         except: pass
 
-    # Double wildcard to get all subfolders and all data files
-    parts_pattern = f"{BASE_URL}/TG_DATA_PARTS/*/data_*.parquet"
-    master_file = f"{BASE_URL}/TELEGRAM_MASTER_DB.parquet"
+    # ✅ Use hf:// protocol for native folder/glob support
+    # This replaces the https:// wildcard which Hugging Face rejects
+    hf_base = "hf://datasets/Saksham4540/Telegram-DB"
+    parts_pattern = f"{hf_base}/TG_DATA_PARTS/*/data_*.parquet"
+    master_file = f"{hf_base}/TELEGRAM_MASTER_DB.parquet"
     
     con.execute(f"""
         CREATE OR REPLACE VIEW tg_data AS 
